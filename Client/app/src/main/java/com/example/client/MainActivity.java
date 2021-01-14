@@ -13,15 +13,19 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.service.IRemoteService;
 
+import java.util.Locale;
 import java.util.Random;
 
+// https://developer.android.com/guide/components/aidl
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "Client";
+    private static final String TAG = "AIDL-Client";
     IRemoteService iRemoteService;
+    private Button bindButton;
     private Button sendButton;
     private TextView resultView;
     private String result;
@@ -30,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        bindButton = findViewById(R.id.bind);
+        bindButton.setText(iRemoteService == null ? R.string.bind_aidl_service : R.string.unbind_aidl_service);
         sendButton = findViewById(R.id.send);
         sendButton.setEnabled(iRemoteService != null);
         resultView = findViewById(R.id.result);
@@ -39,42 +46,65 @@ public class MainActivity extends AppCompatActivity {
     private ServiceConnection mConnection = new ServiceConnection() {
         // Called when the connection with the service is established
         public void onServiceConnected(ComponentName className, IBinder service) {
-            // Following the example above for an AIDL interface,
-            // this gets an instance of the IRemoteInterface, which we can use to call on the service
             Log.i(TAG, "Service connected");
+            Toast.makeText(MainActivity.this, R.string.service_connected, Toast.LENGTH_SHORT).show();
             iRemoteService = IRemoteService.Stub.asInterface(service);
+
+            if (sendButton != null) bindButton.setText(R.string.unbind_aidl_service);
             if (sendButton != null) sendButton.setEnabled(true);
         }
 
         // Called when the connection with the service disconnects unexpectedly
         public void onServiceDisconnected(ComponentName className) {
             Log.e(TAG, "Service has unexpectedly disconnected");
+            Toast.makeText(MainActivity.this, R.string.service_disconnected, Toast.LENGTH_SHORT).show();
             iRemoteService = null;
+
+            if (sendButton != null) bindButton.setText(R.string.bind_aidl_service);
             if (sendButton != null) sendButton.setEnabled(false);
         }
     };
 
     public void bindClick(View view) {
-        Intent intent = new Intent("com.example.service.RemoteService");
-        intent.setPackage("com.example.service");
-//        Intent intent = new Intent(this, RemoteService.class);
-//        intent.setAction(IRemoteService.class.getName());
-        boolean result = bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-        Log.i(TAG, "bind: " + result);
+        if (iRemoteService == null) {
+            // Bind to the AIDL service
+            Intent intent = new Intent("com.example.service.RemoteService");
+            intent.setPackage("com.example.service");
+            boolean result = bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+            Log.i(TAG, "bindService: " + result);
+            if (!result) {
+                Toast.makeText(MainActivity.this, R.string.service_binding_failed, Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            // Unbind from the AIDL service
+            unbindService(mConnection);
+            Log.e(TAG, "Service unbound");
+            Toast.makeText(MainActivity.this, R.string.service_bound, Toast.LENGTH_SHORT).show();
+            iRemoteService = null;
+
+            if (sendButton != null) bindButton.setText(R.string.bind_aidl_service);
+            if (sendButton != null) sendButton.setEnabled(false);
+        }
     }
 
     public void sendClick(View view) {
         if (iRemoteService != null) {
+            // Call the sum() method with two random integers
             Random random = new Random();
+            int first = random.nextInt(10);
+            int second = random.nextInt(10);
             try {
-                int sum = iRemoteService.sum(random.nextInt(10), random.nextInt(10));
-                Log.i(TAG, "sendClick() sum: " + sum);
+                int sum = iRemoteService.sum(first, second);
+                Log.i(TAG, String.format(Locale.US, "sendClick() AIDL call of .sum(%d, %d) returned %d ", first, second, sum));
                 result = String.valueOf(sum);
                 if (resultView != null) resultView.setText(result);
-            } catch (RemoteException | IllegalStateException e) {
+            } catch (RemoteException e) {
                 Log.e(TAG, "sendClick() RemoteException");
+                Toast.makeText(MainActivity.this, R.string.remote_exception_occurred, Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
-        } else Log.e(TAG, "sendClick() iRemoteService is null");
+        } else {
+            Log.e(TAG, "sendClick() iRemoteService is null");
+        }
     }
 }

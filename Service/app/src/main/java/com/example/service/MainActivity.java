@@ -8,6 +8,7 @@ import androidx.lifecycle.Observer;
 import android.os.Bundle;
 import android.widget.TextView;
 
+// https://developer.android.com/guide/components/aidl
 public class MainActivity extends AppCompatActivity {
 
     private static final MutableLiveData<String> text = new MutableLiveData<>();

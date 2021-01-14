@@ -1,6 +1,12 @@
 <resources>
-    <string name="app_name">Client</string>
+    <string name="app_name">AidlPair-Client</string>
     <string name="bind_aidl_service">Bind AIDL service</string>
-    <string name="send_aidl_request">Send AIDL request</string>
+    <string name="unbind_aidl_service">Unbind AIDL service</string>
+    <string name="call_aidl_method">Call AIDL method</string>
     <string name="result">Result:</string>
+    <string name="service_connected">Service connected</string>
+    <string name="service_disconnected">Service disconnected</string>
+    <string name="service_binding_failed">Service binding failed</string>
+    <string name="service_bound">Service unbound</string>
+    <string name="remote_exception_occurred">RemoteException occurred</string>
 </resources>
